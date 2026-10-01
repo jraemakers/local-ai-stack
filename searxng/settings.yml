@@ -1,8 +1,8 @@
 # Only overrides; everything else uses SearXNG's defaults.
+# The secret key comes from SEARXNG_SECRET in .env.
 use_default_settings: true
 
 server:
-  secret_key: "fdac84a79e93c4e66415ffa754339dfab3caf0b59c0a4ff81ecd812962065ac6"
   limiter: false
 
 search:

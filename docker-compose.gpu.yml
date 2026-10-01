@@ -1,0 +1,12 @@
+# GPU variant of Open WebUI. Enable it with this line in .env:
+#   COMPOSE_FILE=docker-compose.yml:docker-compose.gpu.yml
+services:
+  open-webui:
+    image: ghcr.io/open-webui/open-webui:cuda
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]

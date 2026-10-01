@@ -1,5 +1,28 @@
 # Open WebUI + SearXNG Docker Compose Setup
 
+## Requirements
+
+- **Docker** with the Compose plugin (`docker compose version` should work).
+- **Ollama** installed on the host (not in Docker), with at least one model:
+  ```bash
+  curl -fsSL https://ollama.com/install.sh | sh
+  ollama pull qwen3:8b
+  ```
+- **Linux only:** Ollama must listen on all interfaces so the Open WebUI
+  container can reach it:
+  ```bash
+  sudo systemctl edit ollama
+  # add these two lines, save, then:
+  #   [Service]
+  #   Environment="OLLAMA_HOST=0.0.0.0"
+  sudo systemctl restart ollama
+  ```
+  If you use a firewall (ufw), also see [Troubleshooting](#troubleshooting).
+- **Optional:** an NVIDIA GPU with the
+  [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html).
+  The models already run on your GPU through Ollama; this only speeds up
+  Open WebUI's own features such as document search and speech-to-text.
+
 ## Quick Start
 
 1. Clone the repo:
@@ -8,11 +31,16 @@
    cd local-ai-stack
    ```
 
-2. If you already have Open WebUI and SearXNG running, stop and remove them:
+2. Create your `.env` with fresh secrets:
    ```bash
-   docker stop open-webui && docker rm open-webui
-   docker stop searxng && docker rm searxng
+   cp .env.example .env
+   sed -i "s/^WEBUI_SECRET_KEY=.*/WEBUI_SECRET_KEY=$(openssl rand -hex 32)/" .env
+   sed -i "s/^SEARXNG_SECRET=.*/SEARXNG_SECRET=$(openssl rand -hex 32)/" .env
    ```
+   Optional settings in `.env`:
+   - `BIND_ADDRESS=0.0.0.0` to reach the web UIs from other devices
+     (LAN / Tailscale). The default `127.0.0.1` is this computer only.
+   - Uncomment `COMPOSE_FILE=...` to use the NVIDIA GPU version.
 
 3. Start everything:
    ```bash
@@ -24,26 +52,23 @@
    curl "http://localhost:8080/search?q=hello&format=json"
    ```
 
-5. Open http://localhost:3000 and create your account.
+5. Open http://localhost:3000 and create your account. The first account
+   becomes the admin.
 
 ## Web Search
 
-Web search is configured automatically, so there's nothing to set up in the UI:
+Web search works out of the box. Click the **Web Search** toggle in a chat
+and your model can look things up on the internet.
 
-- `searxng/settings.yml` turns on SearXNG's JSON output, which Open WebUI needs.
-- The `environment` section in `docker-compose.yml` turns on web search in
-  Open WebUI and points it at SearXNG (5 results, 10 concurrent requests).
-
-These values are only defaults. If you change web search settings in
-**Admin Panel** → **Settings** → **Web Search** and hit Save, the saved
-values take priority over `docker-compose.yml` from then on.
+To change web search settings, like the number of results, go to
+**Admin Panel** → **Settings** → **Web Search**.
 
 ## Enable Web Search by Default for a Model
 
 To avoid toggling web search on every chat:
 
 1. Go to **Admin Panel** → **Settings** → **Models**
-2. Click your model (e.g. Qwen 2.5 14B)
+2. Click your model
 3. Under **Default Features**, check **Web Search**
 4. Save
 
@@ -53,6 +78,10 @@ To avoid toggling web search on every chat:
   to it via `host.docker.internal:11434`.
 - Your chats, settings, and users are stored in the `open-webui` volume.
 - SearXNG config is in `searxng/settings.yml`.
+- Your secrets are in `.env`, which is not committed to git. Keep it: if
+  `WEBUI_SECRET_KEY` changes, everyone gets logged out.
+- Ports published by Docker bypass ufw, so a ufw rule won't block 3000 or
+  8080. Use `BIND_ADDRESS` in `.env` to control who can reach them.
 
 ## Troubleshooting
 
@@ -77,8 +106,7 @@ Check it from inside the container:
 docker exec open-webui python3 -c 'import urllib.request;print(urllib.request.urlopen("http://host.docker.internal:11434/api/tags",timeout=5).read()[:200])'
 ```
 
-Ollama itself must also listen on all interfaces (`OLLAMA_HOST=0.0.0.0`
-in the ollama systemd service), not just on 127.0.0.1.
+Also check that Ollama listens on all interfaces (see [Requirements](#requirements)).
 
 ## Updating
 
@@ -99,3 +127,7 @@ To stop AND delete all data (careful!):
 ```bash
 docker compose down -v
 ```
+
+## License
+
+[MIT](LICENSE)
