@@ -58,6 +58,32 @@ To avoid toggling web search on every chat:
 - Your chats, settings, and users are stored in the `open-webui` volume.
 - SearXNG config is stored in the `searxng_data` volume.
 
+## Troubleshooting
+
+### Open WebUI shows no models (can't reach Ollama)
+
+Symptoms: the model list is empty, and `docker logs open-webui` shows
+`open_webui.routers.ollama ... Connection error` on every request.
+
+Cause: the firewall blocks port 11434, so the Open WebUI container can't
+reach Ollama on the host.
+
+Fix: open port 11434 for Docker's networks. Use `insert 1` so the rule
+goes above any existing DENY rule for that port (ufw uses the first rule
+that matches):
+
+```bash
+sudo ufw insert 1 allow from 172.16.0.0/12 to any port 11434 proto tcp
+```
+
+Check it from inside the container:
+```bash
+docker exec open-webui python3 -c 'import urllib.request;print(urllib.request.urlopen("http://host.docker.internal:11434/api/tags",timeout=5).read()[:200])'
+```
+
+Ollama itself must also listen on all interfaces (`OLLAMA_HOST=0.0.0.0`
+in the ollama systemd service), not just on 127.0.0.1.
+
 ## Updating
 
 ```bash
