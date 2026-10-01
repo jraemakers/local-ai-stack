@@ -8,6 +8,13 @@ services:
       - open-webui:/app/backend/data
     environment:
       OLLAMA_BASE_URL: "http://host.docker.internal:11434"
+      # Web search via SearXNG (only applied on first start; after that the
+      # values saved in Admin Panel -> Settings -> Web Search take priority)
+      ENABLE_WEB_SEARCH: "true"
+      WEB_SEARCH_ENGINE: "searxng"
+      SEARXNG_QUERY_URL: "http://searxng:8080/search?q=<query>"
+      WEB_SEARCH_RESULT_COUNT: "5"
+      WEB_SEARCH_CONCURRENT_REQUESTS: "10"
     extra_hosts:
       - "host.docker.internal:host-gateway"
     deploy:
@@ -27,7 +34,7 @@ services:
     ports:
       - "8080:8080"
     volumes:
-      - searxng_data:/etc/searxng:rw
+      - ./searxng/settings.yml:/etc/searxng/settings.yml:ro
     restart: unless-stopped
     cap_drop:
       - ALL
@@ -39,4 +46,3 @@ services:
 
 volumes:
   open-webui:
-  searxng_data:

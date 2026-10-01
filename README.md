@@ -2,7 +2,11 @@
 
 ## Quick Start
 
-1. Copy `docker-compose.yml` to a folder on your machine.
+1. Clone the repo:
+   ```bash
+   git clone git@github.com:jraemakers/local-ai-stack.git
+   cd local-ai-stack
+   ```
 
 2. If you already have Open WebUI and SearXNG running, stop and remove them:
    ```bash
@@ -15,32 +19,24 @@
    docker compose up -d
    ```
 
-4. Enable JSON format in SearXNG (only needed once):
-   ```bash
-   docker exec searxng sed -i '/- html/a\    - json' /etc/searxng/settings.yml
-   docker restart searxng
-   ```
-
-5. Verify SearXNG is working:
+4. Verify SearXNG is working:
    ```bash
    curl "http://localhost:8080/search?q=hello&format=json"
    ```
 
-6. Open http://localhost:3000 and create your account.
+5. Open http://localhost:3000 and create your account.
 
-## Configure Web Search in Open WebUI
+## Web Search
 
-After logging in, you need to set up web search in the UI:
+Web search is configured automatically, so there's nothing to set up in the UI:
 
-1. Go to **Admin Panel** → **Settings** → **Web Search**
-2. Toggle **Web Search** ON
-3. Set **Web Search Engine** to **searxng**
-4. Set **Searxng Query URL** to: `http://searxng:8080/search?q=<query>`
-5. Set **Search Result Count** to **5**
-6. Set **Concurrent Requests** to **10**
-7. Hit **Save**
+- `searxng/settings.yml` turns on SearXNG's JSON output, which Open WebUI needs.
+- The `environment` section in `docker-compose.yml` turns on web search in
+  Open WebUI and points it at SearXNG (5 results, 10 concurrent requests).
 
-This only needs to be done once. Settings persist across updates.
+These values are only defaults. If you change web search settings in
+**Admin Panel** → **Settings** → **Web Search** and hit Save, the saved
+values take priority over `docker-compose.yml` from then on.
 
 ## Enable Web Search by Default for a Model
 
@@ -56,7 +52,7 @@ To avoid toggling web search on every chat:
 - Ollama runs on your PC directly (not in Docker). Open WebUI connects
   to it via `host.docker.internal:11434`.
 - Your chats, settings, and users are stored in the `open-webui` volume.
-- SearXNG config is stored in the `searxng_data` volume.
+- SearXNG config is in `searxng/settings.yml`.
 
 ## Troubleshooting
 
